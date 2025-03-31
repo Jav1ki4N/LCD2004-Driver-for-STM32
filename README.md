@@ -1,5 +1,5 @@
 # LCD2004-Driver-for-STM32
-A simple LCD2004 driver for STM32, the LCD must be attached to an i2C adapter board.
+A simple LCD2004 driver based on HAL library for STM32, the LCD must be attached to an i2C adapter board.
 The original source of the code is **@ControllerTech**.
 
 --------------------------------------------------------------------------------------
