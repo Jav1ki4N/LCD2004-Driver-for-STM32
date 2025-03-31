@@ -97,7 +97,7 @@ void LCD_Init (void)
 	LCD_Send_Command (0x0C); //Display on/off control --> D = 1, C and B = 0. (Cursor and blink, last two bits)
 }
 
-/* disaplay a string */
+/* display a string */
 void LCD_Disp_Str(char *str)  //e.g. "Hell no, World!"
 {
 	while (*str)                 //if the current char is not null
