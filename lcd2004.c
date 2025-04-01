@@ -155,7 +155,7 @@ void LCD_Blink_Char(int8_t row,int8_t col,char ch,int period)
 
 /* Not a fan of counting from 0 */
 /* if you wish to start from 0 */
-/* replace "index - 1" by "index" and use index ranged from[0,7] */
+/* replace "index - 1" with "index" and use index ranged from[0,7] */
 
 // E.g. LCD_Add_Custom_Char(1,heart_shape) creates a ‘💖’ character as the 1st character of CGRAM
 void LCD_Add_Custom_Char(uint8_t index, const uint8_t* char_buf) // Write a char customized in char_buf 
