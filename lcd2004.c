@@ -18,13 +18,6 @@ extern I2C_HandleTypeDef hi2c1; // Don't put this in the header file
 /* and low 4 Bits seperately.                                    */
                                           
 
-/******************************************************************/
-/* To send command to LCD, EN = 1,RS = 0, RW = 0                  */
-/* So P3 - P0 is 1100, and 1100(b) = C(hex)                       */
-/* the format should be <data> | 0xC0                             */
-/* and when it is over, EN = 0                                    */
-/* the format should be <data> | 0x80                             */
-
 void LCD_Send_Command(char cmd) // e.g 0x3F
 {
     char data_h, data_l;        // the high / low 4 Bits of cmd
@@ -85,20 +78,20 @@ void LCD_Init (void)
 	LCD_Send_Command (0x20);  // 4bit mode
 	HAL_Delay(10);
 
-    // dislay initialisation
+    // display initialisation
     LCD_Send_Command (0x28); // Function set --> DL=0 (4 bit mode), N = 1 (2 line display) F = 0 (5x8 characters)
 	HAL_Delay(1);
 	LCD_Send_Command (0x08); //Display on/off control --> D=0,C=0, B=0  ---> display off
 	HAL_Delay(1);
-	LCD_Send_Command (0x01);  // clear display
+	LCD_Send_Command (0x01); // clear display
 	HAL_Delay(2);
 	LCD_Send_Command (0x06); //Entry mode set --> I/D = 1 (increment cursor) & S = 0 (no shift)
 	HAL_Delay(1);
 	LCD_Send_Command (0x0C); //Display on/off control --> D = 1, C and B = 0. (Cursor and blink, last two bits)
 }
 
-/* display a string */
-void LCD_Disp_Str(char *str)  //e.g. "Hell no, World!"
+/* disaplay a string */
+void LCD_Disp_Str(char *str)     //e.g. "Hell no, World!"
 {
 	while (*str)                 //if the current char is not null
         LCD_Send_Data (*str++);  //keep on sending the next char
@@ -106,10 +99,12 @@ void LCD_Disp_Str(char *str)  //e.g. "Hell no, World!"
 
 
 /************************************************************************************************/
+/*                               My customized functions                                        */
+/************************************************************************************************/
 
-/* My customized functions */
-
-/* display a string on a specific Row */
+/*
+ *@brief: displaying a string at (Rowx,Colx)  
+*/
 void LCD_Disp_String(int8_t row,int8_t col,char *str) 
 {
     int8_t addr = row + (col-1);                                        
@@ -117,7 +112,9 @@ void LCD_Disp_String(int8_t row,int8_t col,char *str)
     LCD_Disp_Str(str);
 }
 
-/* if you want to have a flickering row, you can use this function */
+/*
+ *@brief: displaying a blinking string at (Rowx,Colx)  
+*/
 void LCD_Blink_String(int8_t row,int8_t col,char *str,int period) //period is the period of flickering
 {
   LCD_Disp_String(row,1,"                     ");
@@ -126,9 +123,82 @@ void LCD_Blink_String(int8_t row,int8_t col,char *str,int period) //period is th
   HAL_Delay(period);  
 }
 
+/*
+ *@brief: displaying a char at (Rowx,Colx)  
+*/
 void LCD_Disp_Char(int8_t row,int8_t col,char ch)
 {
     int8_t addr = row + (col-1);
     LCD_Send_Command(addr);
     LCD_Send_Data(ch);
 }
+
+/*
+ *@brief: displaying a blinking char at (Rowx,Colx)  
+*/
+void LCD_Blink_Char(int8_t row,int8_t col,char ch,int period)
+{
+    LCD_Disp_Char(row,col,' ');
+    HAL_Delay(period);
+    LCD_Disp_Char(row,col,ch);
+    HAL_Delay(period);
+}
+
+/* Every custom char his 8 bits       */
+/* and the CGRAM has 64 bits in total */
+/* the start address of CGRAM is 0x40 */
+/* the address of the first character will be 0x40 + 0x00 */
+/* while the second character will be 0x40 + 0x08 */
+/* which is 0x40 + (index-1 * 8), consider the second character's index is 2 */
+/* so for the <index> Character, the address of the first character will be 0x40 + (index-1 * 8) */
+/* where index could be 1-8 */
+
+/* Not a fan of counting from 0 */
+/* if you wish to start from 0 */
+/* replace "index - 1" by "index" and use index ranged from[0,7] */
+
+// E.g. LCD_Add_Custom_Char(1,heart_shape) creates a ‘💖’ character as the 1st character of CGRAM
+void LCD_Add_Custom_Char(uint8_t index, const uint8_t* char_buf) // Write a char customized in char_buf 
+                                                                 // as the <index> char in CGRAM
+ {
+    if(index > 8 )index = 8; //we dont have rooms for >8 chars
+    if(index <= 1)index = 1; //and 0 chars means nothing
+
+    LCD_Send_Command(LCD_CGRAM_ADDR + ((index-1) * 8));          //locate the address of the character
+
+    for(int cnt = 0; cnt < 7; cnt++) // write char data in the 7*5 space, 7 lines in total
+    {
+        LCD_Send_Data(char_buf[cnt]);
+    }
+}
+
+//E.g. LCD_Disp_Custom_Char(ROW1,COL1,1) displays a ‘💖’ character in (1,1)
+void LCD_Disp_Custom_Char(int8_t row,int8_t col,uint8_t index) // Display the <index> char in CGRAM
+{
+    if(index > 8 )index = 8;
+    if(index <= 1)index = 1;
+
+    int8_t addr = row + (col-1);
+    LCD_Send_Command(addr);
+    LCD_Send_Data(index-1); 
+}
+
+void LCD_Blink_Custom_Char(int8_t row,int8_t col,uint8_t index,int period)
+{
+    LCD_Disp_Char(row,col,' ');
+    HAL_Delay(period);
+    LCD_Disp_Custom_Char(row,col,index);
+    HAL_Delay(period);
+}
+
+uint8_t heart_shape[] =         //the char '💖'
+{
+    0x00,  // 0b00000  -> 0x00
+    0x0A,  // 0b01010  -> 0x0A
+    0x1F,  // 0b11111  -> 0x1F
+    0x1F,  // 0b11111  -> 0x1F
+
+    0x0E,  // 0b01110  -> 0x0E
+    0x04,  // 0b00100  -> 0x04
+    0x00   // 0b00000  -> 0x00
+};
