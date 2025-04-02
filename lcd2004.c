@@ -155,7 +155,7 @@ void LCD_Blink_Char(int8_t row,int8_t col,char ch,int period)
 
 /* Not a fan of counting from 0 */
 /* if you wish to start from 0 */
-/* replace "index - 1" with "index" and use index ranged from[0,7] */
+/* replace "index - 1" by "index" and use index ranged from[0,7] */
 
 // E.g. LCD_Add_Custom_Char(1,heart_shape) creates a ‘💖’ character as the 1st character of CGRAM
 void LCD_Add_Custom_Char(uint8_t index, const uint8_t* char_buf) // Write a char customized in char_buf 
@@ -166,7 +166,7 @@ void LCD_Add_Custom_Char(uint8_t index, const uint8_t* char_buf) // Write a char
 
     LCD_Send_Command(LCD_CGRAM_ADDR + ((index-1) * 8));          //locate the address of the character
 
-    for(int cnt = 0; cnt < 7; cnt++) // write char data in the 7*5 space, 7 lines in total
+    for(int cnt = 0; cnt < 8; cnt++) // "cnt<7" cause errors
     {
         LCD_Send_Data(char_buf[cnt]);
     }
@@ -193,12 +193,16 @@ void LCD_Blink_Custom_Char(int8_t row,int8_t col,uint8_t index,int period)
 
 uint8_t heart_shape[] =         //the char '💖'
 {
-    0x00,  // 0b00000  -> 0x00
-    0x0A,  // 0b01010  -> 0x0A
-    0x1F,  // 0b11111  -> 0x1F
-    0x1F,  // 0b11111  -> 0x1F
+    0x00,   // 0b00000  -> 0x00
+    0x0A,   // 0b01010  -> 0x0A
+    0x1F,   // 0b11111  -> 0x1F
+    0x1F,   // 0b11111  -> 0x1F
 
-    0x0E,  // 0b01110  -> 0x0E
-    0x04,  // 0b00100  -> 0x04
-    0x00   // 0b00000  -> 0x00
+    0x0E,   // 0b01110  -> 0x0E
+    0x04,   // 0b00100  -> 0x04
+    0x00,   // 0b00000  -> 0x00
+    0x00
 };
+
+// It is recommended to involve 8 elements in your custom char array
+// or sometimes the character will be displayed incorrectly with a soild line laying under 
